@@ -93,9 +93,10 @@ This repository assumes that the user has a multi-sample VCF or BCF file that
 they would like to import into a TileDB-VCF instance. The script to perform this
 step is `code/store_samps.sh`. A few notes on this process:
 
-1. The script will check to see if any samples in the multi-sample file are already
-present in the DB. If so, these samples can either be removed prior to import or
-given a new, unique identifier
+1. It is possible to import a sample that is already present within the DB. In 
+this case I think(?) TileDB replaces the sample (unfortunately without a warning).
+I would like to add some exception handling for this, but for now it's the user's
+responsibility to watch out for sample collisions
 2. In the case of importing large files, `bcftools +split` will run into issues
 with the system-imposed limit on the number of files that can be open simultaneously.
 You can check this with `ulimit -n`. Typically on Linux systems this will be 1,024.
