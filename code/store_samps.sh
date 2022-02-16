@@ -59,9 +59,9 @@ else
 fi
 
 
-#rm -rf "$samps_tmp"
-#echo "Removed temp directory $samps_tmp"
-#rm -rf "$cvcf_tmp"
-#echo "Removed temp directory $cvcf_tmp"
-#rm -rf "$ssvcf_tmp"
-#echo "Removed temp directory $ssvcf_tmp"
+rm -rf "$samps_tmp"
+echo "Removed temp directory $samps_tmp"
+rm -rf "$cvcf_tmp"
+echo "Removed temp directory $cvcf_tmp"
+rm -rf "$ssvcf_tmp"
+echo "Removed temp directory $ssvcf_tmp"
