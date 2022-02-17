@@ -38,7 +38,7 @@ if [[ $n_samps -lt $chunk_size ]]; then
     tiledbvcf export --uri "$db_path" \
         --output-format b \
         --samples-file "$samps_file" \
-        --log-level info \
+        --log-level warn \
         --output-dir "$ssvcf_tmp"
     for f in "$ssvcf_tmp"/*.bcf; do bcftools index -c "$f"; done
     bcftools merge "$ssvcf_tmp"/*.bcf -O "$out_fmt" -o "$vcf_file"
@@ -48,15 +48,15 @@ if [[ $n_samps -lt $chunk_size ]]; then
 else
     ## Figure out total number of chunks we need to split samples into
     ## Note that bash only performs integer division - remainder (if any) is removed
-    n_chunks=$(($n_samps / $chunk_size))
-    n_chunks=$(($n_chunks + 1))
+    max_ind=$(($n_samps / $chunk_size))
+    n_chunks=$(($max_ind + 1))
 
     ## For each chunk, output individual sample BCFs and merge together
-    for i in $(seq 1 $n_chunks); do
+    for i in $(seq 0 $max_ind); do
         tiledbvcf export --uri "$db_path" \
             --output-format b \
             --samples-file "$samps_file" \
-            --log-level info \
+            --log-level warn \
             --sample-partition "${i}:${n_chunks}" \
             --output-dir "$ssvcf_tmp"
         for f in "$ssvcf_tmp"/*.bcf; do bcftools index -c "$f"; done

@@ -6,9 +6,9 @@
 
 #### User-Defined Constants ###########
 
-vcf_file="/autofs/bioinformatics-ward/tiledb_test/500_random_Norgrains_samps.bcf"
-db_path="/autofs/bioinformatics-ward/tiledb_test/500samps"
-chunk_size=100
+vcf_file="/autofs/bioinformatics-ward/2021_Norgrains_IL_merged_VCF/filt_80miss_3maf_10het/all_regions_samp_filt.bcf"
+db_path="/autofs/bioinformatics-ward/norgrains_gbs_tiledb"
+chunk_size=500
 
 
 #### Executable #######################
@@ -28,7 +28,7 @@ n_samps=$(wc -l < "${samps_tmp}/samps.txt")
 if [[ $n_samps -lt $chunk_size ]]; then
     bcftools +split "$vcf_file" -Ob -o "$ssvcf_tmp"
     for f in "$ssvcf_tmp"/*.bcf; do bcftools index -c "$f"; done
-    tiledbvcf store --uri "$db_path" "$ssvcf_tmp"/*.bcf
+    tiledbvcf store --uri "$db_path" --log-level warn "$ssvcf_tmp"/*.bcf
 
 ## It's much more involved if the VCF has more samples than the number of files
 ## the system can have open at once. In this case we need to split in two stages
@@ -53,7 +53,7 @@ else
     for f in "$cvcf_tmp"/*.bcf; do
         bcftools +split "$f" -Ob -o "$ssvcf_tmp"
         for g in "$ssvcf_tmp"/*.bcf; do bcftools index -c "$g"; done
-        tiledbvcf store --uri "$db_path" --log-level info "$ssvcf_tmp"/*.bcf
+        tiledbvcf store --uri "$db_path" --log-level warn "$ssvcf_tmp"/*.bcf
         rm "$ssvcf_tmp"/*
     done
 fi
