@@ -2,12 +2,29 @@
 
 ## Ingest (import) VCF/BCF file into TileDB
 ##
+## This script will import a multi-sample VCF/BCF file into a TileDB instance.
+## As always, processing will be faster using a BCF file, though a corresponding
+## VCF file may take up less disk space.
+##
+## The script takes as input the path to the input VCF/BCF file, the path to 
+## the TileDB instance (must already be initialized), and the chunk size, or
+## maximum number of samples to import at once. Note that the chunk size should
+## not be greater than the system-imposed maximum number of files that may be
+## simultaneously opened. Check this on Linux with ulimit -n. Usually it is set
+## to 1,024.
+##
+## The user can optionally specify a .bed file to only import certain genomic
+## regions. This isn't necessarily recommended and it's often best to import
+## everything and then restrict to specific regions when exporting from the TileDB.
+## Set bed_file to some string that isn't a valid file name to disable this feature.
+################################################################################
 
 
 #### User-Defined Constants ###########
 
 vcf_file="/autofs/bioinformatics-ward/2021_Norgrains_IL_merged_VCF/filt_80miss_3maf_10het/all_regions_samp_filt.bcf"
 db_path="/autofs/bioinformatics-ward/norgrains_gbs_tiledb"
+bed_file="none"
 chunk_size=500
 
 
@@ -26,7 +43,12 @@ n_samps=$(wc -l < "${samps_tmp}/samps.txt")
 ## Pretty simple if the VCF has few enough samples to be processed all at once
 ## just split into individual samples, index, and import
 if [[ $n_samps -lt $chunk_size ]]; then
-    bcftools +split "$vcf_file" -Ob -o "$ssvcf_tmp"
+    
+    if [[ -f "$bed_file" ]]; then
+        bcftools view "$vcf_file" -R "$bed_file" -Ou | bcftools +split - -Ob -o "$ssvcf_tmp"
+    else
+        bcftools +split "$vcf_file" -Ob -o "$ssvcf_tmp"
+    fi
     for f in "$ssvcf_tmp"/*.bcf; do bcftools index -c "$f"; done
     tiledbvcf store --uri "$db_path" --log-level warn "$ssvcf_tmp"/*.bcf
 
@@ -46,8 +68,13 @@ else
 
     ## Concatenate back together and perform first split
     cat "${samps_tmp}"/*update.txt > "${samps_tmp}/split_key.txt"
-    bcftools +split "$vcf_file" -G "${samps_tmp}/split_key.txt" -Ob -o "$cvcf_tmp"
-
+    if [[ -f "$bed_file" ]]; then
+        bcftools view "$vcf_file" -R "$bed_file" -Ou |
+            bcftools +split - -G "${samps_tmp}/split_key.txt" -Ob -o "$cvcf_tmp"
+    else
+        bcftools +split "$vcf_file" -G "${samps_tmp}/split_key.txt" -Ob -o "$cvcf_tmp"
+    fi
+    
     ## Now loop through each primary split BCF and perform the secondary split
     ## (by individual samples); upload all to the DB
     for f in "$cvcf_tmp"/*.bcf; do

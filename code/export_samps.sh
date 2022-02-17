@@ -2,12 +2,30 @@
 
 ## Export multi-sample VCF/BCF from TileDB
 ##
+## This script will export a multi-sample VCF or BCF file from a TileDB instance.
+## As always, writing will be faster for a BCF file, though a corresponding
+## VCF file may take up less disk space.
+##
+## The script takes as input the path to the TileDB instance, the path to the
+## output VCF/BCF file, the path to a text file listing samples to export (one
+## sample per line), and the chunk size, or
+## maximum number of samples to export at once. Note that the chunk size should
+## not be greater than the system-imposed maximum number of files that may be
+## simultaneously opened. Check this on Linux with ulimit -n. Usually it is set
+## to 1,024.
+##
+## The user can optionally specify a .bed file to only export certain genomic
+## regions. Set bed_file to some string that isn't a valid file name to disable 
+## this feature.
+################################################################################
+
 
 #### User-Defined Constants ###########
 
 db_path="/autofs/bioinformatics-ward/tiledb_test/500samps"
 vcf_file="/autofs/bioinformatics-ward/tiledb_test/exported/all_500_merged.bcf"
 samps_file="/autofs/bioinformatics-ward/tiledb_test/500samp_names.txt"
+bed_file="none"
 chunk_size=100
 
 
@@ -35,15 +53,24 @@ ssvcf_tmp=$(mktemp -d -p "$out_dir")
 ## just export, index, and merge
 n_samps=$(wc -l < "$samps_file")
 if [[ $n_samps -lt $chunk_size ]]; then
-    tiledbvcf export --uri "$db_path" \
-        --output-format b \
-        --samples-file "$samps_file" \
-        --log-level warn \
-        --output-dir "$ssvcf_tmp"
+    if [[ -f "$bed_file" ]]; then
+        tiledbvcf export --uri "$db_path" \
+            --output-format b \
+            --samples-file "$samps_file" \
+            --regions-file "$bed_file" \
+            --log-level warn \
+            --output-dir "$ssvcf_tmp"
+    else
+        tiledbvcf export --uri "$db_path" \
+            --output-format b \
+            --samples-file "$samps_file" \
+            --log-level warn \
+            --output-dir "$ssvcf_tmp"
+    fi
     for f in "$ssvcf_tmp"/*.bcf; do bcftools index -c "$f"; done
     bcftools merge "$ssvcf_tmp"/*.bcf -O "$out_fmt" -o "$vcf_file"
     
-## It's more involved we request more samples than the number of files
+## It's more involved if we request more samples than the number of files
 ## the system can have open at once. In this case we need to split in two stages
 else
     ## Figure out total number of chunks we need to split samples into
@@ -53,12 +80,22 @@ else
 
     ## For each chunk, output individual sample BCFs and merge together
     for i in $(seq 0 $max_ind); do
-        tiledbvcf export --uri "$db_path" \
-            --output-format b \
-            --samples-file "$samps_file" \
-            --log-level warn \
-            --sample-partition "${i}:${n_chunks}" \
-            --output-dir "$ssvcf_tmp"
+        if [[ -f "$bed_file" ]]; then
+            tiledbvcf export --uri "$db_path" \
+                --output-format b \
+                --samples-file "$samps_file" \
+                --regions-file "$bed_file" \
+                --log-level warn \
+                --sample-partition "${i}:${n_chunks}" \
+                --output-dir "$ssvcf_tmp"
+        else
+            tiledbvcf export --uri "$db_path" \
+                --output-format b \
+                --samples-file "$samps_file" \
+                --log-level warn \
+                --sample-partition "${i}:${n_chunks}" \
+                --output-dir "$ssvcf_tmp"
+        fi
         for f in "$ssvcf_tmp"/*.bcf; do bcftools index -c "$f"; done
         bcftools merge "$ssvcf_tmp"/*.bcf -Ob -o "${cvcf_tmp}/${i}.bcf"
         rm "$ssvcf_tmp"/*
@@ -70,7 +107,7 @@ else
 fi
 
 
-#rm -rf "$cvcf_tmp"
-#echo "Removed temp directory $cvcf_tmp"
-#rm -rf "$ssvcf_tmp"
-#echo "Removed temp directory $ssvcf_tmp"
+rm -rf "$cvcf_tmp"
+echo "Removed temp directory $cvcf_tmp"
+rm -rf "$ssvcf_tmp"
+echo "Removed temp directory $ssvcf_tmp"

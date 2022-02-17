@@ -17,31 +17,32 @@ a TileDB-VCF instance:
 ## Considerations
 
 While I believe that a system like TileDB is a very sensible alternative to
-simply storing genetic variants in giant VCF/BCF files, there are a few
+simply storing genetic variants in giant VCF/BCF files, there are a few pros, cons, and general
 considerations to keep in mind:
 
 ### Updating
 
 The main impetus for using TileDB is that new samples can be added to the DB
 without modifying the existing DB contents. This avoids having to rerun SNP calling
-any time new data is added.
+any time new data is added. One thing to note is that, as far as I can tell,
+there is no way to remove a sample once it has been added to the DB.
 
 ### Front-loaded calling
 
 One advantage of using TileDB-VCF, as opposed to GATK's GenomicsDB, is that the 
 variant calling process happens prior to DB import. Therefore, once new samples
 are imported into the DB, generating a new
-multi-sample VCF/BCF file an export step followed by a merging step,
+multi-sample VCF/BCF file entails an export step followed by a merging step,
 which are much faster.
 
 ### Workflow
 
 TileDB-VCF seems to be geared somewhat more towards a GATK workflow, where
-single-sample gVCF files are created prior to SNP calling. We typically avoid
+single-sample gVCF files are created prior to SNP calling. Typicall I avoid
 using GATK because, as of this writing, it still doesn't support the newer .csi
 indices required for larger chromosomes (e.g. many of the wheat chromosomes).
 
-Therefore our use-case is a little roundabout. We will typically call variants
+Therefore our my use case is a little roundabout. We will typically call variants
 using BCFTools or Freebayes. Both of these tools create cohort or multi-sample
 VCF/BCF files. These must then be split into single-sample VCF/BCF files using
 `bcftools +split` prior to ingestion into the DB. On the other end, single sample
@@ -52,7 +53,7 @@ export are on the project's roadmap.
 ### Database size
 
 A typical TileDB for VCF data will be larger than a corresponding single multi-sample
-VCF/BCF file; in my testing about 4X larger, though this heavily depends upon 
+VCF/BCF file; in my testing about 4X or 5X larger, though this heavily depends upon 
 the sparseness of the data. This is because the DB stores metadata (i.e. header data) for each sample, whereas in a 
 multi-sample file this information is stored only once. On the other hand this
 approach allows for much better record keeping regarding how each particular
