@@ -17,6 +17,11 @@
 ## regions. This isn't necessarily recommended and it's often best to import
 ## everything and then restrict to specific regions when exporting from the TileDB.
 ## Set bed_file to some string that isn't a valid file name to disable this feature.
+##
+## Likewise, the user can optionally specify a text file listing samples (one per
+## line). If this file is specified, then only these samples will be subset from
+## the input VCF/BCF and added to the DB. Once again, set this to some string
+## that isn't a valid file name to disable.
 ################################################################################
 
 
@@ -24,6 +29,7 @@
 
 vcf_file="/autofs/bioinformatics-ward/2021_Norgrains_IL_merged_VCF/filt_80miss_3maf_10het/all_regions_samp_filt.bcf"
 db_path="/autofs/bioinformatics-ward/norgrains_gbs_tiledb"
+samps_file="/autofs/bioinformatics-ward/2021_Norgrains_IL_merged_VCF/filt_80miss_3maf_10het/genos_diff.txt"
 bed_file="none"
 chunk_size=500
 
@@ -37,7 +43,13 @@ cvcf_tmp=$(mktemp -d -p "$db_dir")
 ssvcf_tmp=$(mktemp -d -p "$db_dir")
 
 ## Get list of samples from VCF/BCF
-bcftools query -l "$vcf_file" > "${samps_tmp}/samps.txt"
+bcftools query -l "$vcf_file" | sort > "${samps_tmp}/samps.txt"
+if [[ -f "$samps_file" ]]; then 
+    cat "$samps_file" | sort > "${samps_tmp}/usr_samps.txt"
+    comm -12 "${samps_tmp}/samps.txt" "${samps_tmp}/usr_samps.txt" > "${samps_tmp}/tmp.txt"
+    mv "${samps_tmp}/tmp.txt" "${samps_tmp}/samps.txt"
+    rm "${samps_tmp}/usr_samps.txt"
+fi
 n_samps=$(wc -l < "${samps_tmp}/samps.txt")
 
 ## Pretty simple if the VCF has few enough samples to be processed all at once
@@ -45,9 +57,11 @@ n_samps=$(wc -l < "${samps_tmp}/samps.txt")
 if [[ $n_samps -lt $chunk_size ]]; then
     
     if [[ -f "$bed_file" ]]; then
-        bcftools view "$vcf_file" -R "$bed_file" -Ou | bcftools +split - -Ob -o "$ssvcf_tmp"
+        bcftools view "$vcf_file" -S "${samps_tmp}/samps.txt" -R "$bed_file" --force-samples -Ou |
+            bcftools +split - -Ob -o "$ssvcf_tmp"
     else
-        bcftools +split "$vcf_file" -Ob -o "$ssvcf_tmp"
+        bcftools view "$vcf_file" -S "${samps_tmp}/samps.txt" --force-samples -Ou |
+            bcftools +split - -Ob -o "$ssvcf_tmp"
     fi
     for f in "$ssvcf_tmp"/*.bcf; do bcftools index -c "$f"; done
     tiledbvcf store --uri "$db_path" --log-level warn "$ssvcf_tmp"/*.bcf
@@ -68,11 +82,14 @@ else
 
     ## Concatenate back together and perform first split
     cat "${samps_tmp}"/*update.txt > "${samps_tmp}/split_key.txt"
+    cut -f 1 "${samps_tmp}/split_key.txt" > "${samps_tmp}/samps.txt"
+
     if [[ -f "$bed_file" ]]; then
-        bcftools view "$vcf_file" -R "$bed_file" -Ou |
+        bcftools view "$vcf_file" -S "${samps_tmp}/samps.txt" -R "$bed_file" --force-samples -Ou |
             bcftools +split - -G "${samps_tmp}/split_key.txt" -Ob -o "$cvcf_tmp"
     else
-        bcftools +split "$vcf_file" -G "${samps_tmp}/split_key.txt" -Ob -o "$cvcf_tmp"
+        bcftools view "$vcf_file" -S "${samps_tmp}/samps.txt" --force-samples -Ou |
+            bcftools +split - -G "${samps_tmp}/split_key.txt" -Ob -o "$cvcf_tmp"
     fi
     
     ## Now loop through each primary split BCF and perform the secondary split
