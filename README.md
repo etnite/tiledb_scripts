@@ -14,6 +14,10 @@ a TileDB-VCF instance:
 1. "Ingesting" (i.e. importing) single-sample VCF/BCF files into the DB
 2. Exporting single-sample VCF/BCF files out of the DB
 
+While TileDB can, for the time being, only handle import/export of single-sample
+files, the scripts in this repository are designed to help facilitate import/export
+of multi-sample/cohort files.
+
 ## Considerations
 
 While I believe that a system like TileDB is a very sensible alternative to
@@ -30,19 +34,19 @@ there is no way to remove a sample once it has been added to the DB.
 ### Front-loaded calling
 
 One advantage of using TileDB-VCF, as opposed to GATK's GenomicsDB, is that the 
-variant calling process happens prior to DB import. Therefore, once new samples
-are imported into the DB, generating a new
-multi-sample VCF/BCF file entails an export step followed by a merging step,
+variant calling process can happen prior to DB import depending on the software used. 
+Therefore, once new samples are imported into the DB, generating a new
+multi-sample VCF/BCF file entails an export step followed by a merging step(s),
 which are much faster.
 
 ### Workflow
 
 TileDB-VCF seems to be geared somewhat more towards a GATK workflow, where
-single-sample gVCF files are created prior to SNP calling. Typicall I avoid
+single-sample gVCF files are created prior to SNP calling. Typically I avoid
 using GATK because, as of this writing, it still doesn't support the newer .csi
 indices required for larger chromosomes (e.g. many of the wheat chromosomes).
 
-Therefore our my use case is a little roundabout. We will typically call variants
+Therefore my use case is a little roundabout. We will typically call variants
 using BCFTools or Freebayes. Both of these tools create cohort or multi-sample
 VCF/BCF files. These must then be split into single-sample VCF/BCF files using
 `bcftools +split` prior to ingestion into the DB. On the other end, single sample
@@ -61,7 +65,7 @@ sample was processed.
 
 A TileDB will be substantially smaller than the sum of the single-sample files
 it is built out of. This is because, unlike a flat file, the TileDB does
-not store any missing data.
+not store missing data.
 
 ## Installation
 
@@ -108,5 +112,15 @@ they will be imported in batches.
 
 This repository assumes that the user wants to create a multi-sample VCF/BCF file
 from an existing TileDB-VCF instance using the script `code_export_samps.sh`. Once again, for large numbers of samples
-`bcftools merge` will run into the `ulimit` issue. Therefore in these cases a
-multi-level, heirarchical merging is performed.
+`bcftools merge` will run into issues with the number of files that can be open
+at once. Therefore in these cases a stepwise multi-level merging is performed.
+The export step can also take a .bed file specifying which region(s) to export.
+
+## Filtering
+
+The contents of the TileDB will depend upon any filtering performed on the input
+VCFs/BCFs prior to import. Typically I lightly filter raw files by SNPwise
+missingness, SNPwise het. call proportion, MAF, and sample-wise het. call
+proportion prior to importing, just to get rid of SNPs and samples that won't likely
+be very useful. Likewise, the multi-sample VCF/BCF
+generated from exported samples can be filtered however the user wants. 
