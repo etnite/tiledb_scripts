@@ -41,12 +41,8 @@ which are much faster.
 
 ### Workflow
 
-TileDB-VCF seems to be geared somewhat more towards a GATK workflow, where
-single-sample gVCF files are created prior to SNP calling. Typically I avoid
-using GATK because, as of this writing, it still doesn't support the newer .csi
-indices required for larger chromosomes (e.g. many of the wheat chromosomes).
-
-Therefore my use case is a little roundabout. We will typically call variants
+My use case is a little roundabout as I don't usually create single-sample VCF
+files as part of my variant calling process. I will typically call variants
 using BCFTools or Freebayes. Both of these tools create cohort or multi-sample
 VCF/BCF files. These must then be split into single-sample VCF/BCF files using
 `bcftools +split` prior to ingestion into the DB. On the other end, single sample
@@ -58,14 +54,14 @@ export are on the project's roadmap.
 
 A typical TileDB for VCF data will be larger than a corresponding single multi-sample
 VCF/BCF file; in my testing about 4X or 5X larger, though this heavily depends upon 
-the sparseness of the data. This is because the DB stores metadata (i.e. header data) for each sample, whereas in a 
+the sparseness of the data. This is because the DB stores metadata (e.g. header data) for each sample, whereas in a 
 multi-sample file this information is stored only once. On the other hand this
 approach allows for much better record keeping regarding how each particular
 sample was processed.
 
 A TileDB will be substantially smaller than the sum of the single-sample files
 it is built out of. This is because, unlike a flat file, the TileDB does
-not store missing data.
+not store any missing data.
 
 ## Installation
 
