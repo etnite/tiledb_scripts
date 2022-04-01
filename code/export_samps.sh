@@ -106,6 +106,7 @@ else
     bcftools merge --no-version "$cvcf_tmp"/*.bcf -O "$out_fmt" -o "$vcf_file"
 fi
 
+bcftools index -c "$vcf_file"
 
 rm -rf "$cvcf_tmp"
 echo "Removed temp directory $cvcf_tmp"
