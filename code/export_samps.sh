@@ -31,6 +31,9 @@ chunk_size=200
 
 #### Executable #######################
 
+out_dir=$(dirname "$vcf_file")
+mkdir -p "$out_dir"
+
 ## Get output format from vcf_file extension
 ext="${vcf_file##*.}"
 if [[ $ext == "gz" ]]; then
