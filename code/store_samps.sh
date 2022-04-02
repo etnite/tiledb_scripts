@@ -60,10 +60,12 @@ if [[ $n_samps -lt $chunk_size ]]; then
     if [[ -f "$bed_file" ]]; then
         bcftools view "$vcf_file" -S "${samps_tmp}/samps.txt" -R "$bed_file" --force-samples -Ou |
             bcftools norm - -f "$ref_file" -c s -m +both -Ou |
+            bcftools annotate - -x INFO -Ou |
             bcftools +split - -Ob -o "$ssvcf_tmp"
     else
         bcftools view "$vcf_file" -S "${samps_tmp}/samps.txt" --force-samples -Ou |
             bcftools norm - -f "$ref_file" -c s -m +both -Ou |
+            bcftools annotate - -x INFO -Ou |
             bcftools +split - -Ob -o "$ssvcf_tmp"
     fi
     for f in "$ssvcf_tmp"/*.bcf; do bcftools index -c "$f"; done
@@ -90,10 +92,12 @@ else
     if [[ -f "$bed_file" ]]; then
         bcftools view "$vcf_file" -S "${samps_tmp}/samps.txt" -R "$bed_file" --force-samples -Ou |
             bcftools norm - -f "$ref_file" -c s -m +both -Ou |
+            bcftools annotate - -x INFO -Ou |
             bcftools +split - -G "${samps_tmp}/split_key.txt" -Ob -o "$cvcf_tmp"
     else
         bcftools view "$vcf_file" -S "${samps_tmp}/samps.txt" --force-samples -Ou |
             bcftools norm - -f "$ref_file" -c s -m +both -Ou |
+            bcftools annotate - -x INFO -Ou |
             bcftools +split - -G "${samps_tmp}/split_key.txt" -Ob -o "$cvcf_tmp"
     fi
     
