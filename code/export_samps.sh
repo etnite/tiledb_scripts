@@ -68,7 +68,7 @@ if [[ $n_samps -lt $chunk_size ]]; then
             --output-dir "$ssvcf_tmp"
     fi
     for f in "$ssvcf_tmp"/*.bcf; do bcftools index -c "$f"; done
-    bcftools merge --no-version "$ssvcf_tmp"/*.bcf -Ou |
+    bcftools merge --no-version "$ssvcf_tmp"/*.bcf -i DP:avg,DP4:avg -Ou |
         bcftools view - -m 2 -O "$out_fmt" -o "$vcf_file"
     
 ## It's more involved if we request more samples than the number of files
@@ -98,13 +98,13 @@ else
                 --output-dir "$ssvcf_tmp"
         fi
         for f in "$ssvcf_tmp"/*.bcf; do bcftools index -c "$f"; done
-        bcftools merge --no-version "$ssvcf_tmp"/*.bcf -Ob -o "${cvcf_tmp}/${i}.bcf"
+        bcftools merge --no-version "$ssvcf_tmp"/*.bcf -i DP:avg,DP4:avg -Ob -o "${cvcf_tmp}/${i}.bcf"
         rm "$ssvcf_tmp"/*
     done
 
     ## Perform final, secondary merge
     for f in "$cvcf_tmp"/*.bcf; do bcftools index -c "$f"; done
-    bcftools merge --no-version "$cvcf_tmp"/*.bcf -Ou |
+    bcftools merge --no-version "$cvcf_tmp"/*.bcf -i DP:avg,DP4:avg -Ou |
         bcftools view - -m 2 -O "$out_fmt" -o "$vcf_file"
 fi
 
