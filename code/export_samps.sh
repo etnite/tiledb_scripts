@@ -22,11 +22,11 @@
 
 #### User-Defined Constants ###########
 
-db_path="/autofs/bioinformatics-ward/tiledb_test/500samps"
-vcf_file="/autofs/bioinformatics-ward/tiledb_test/exported/all_500_merged.bcf"
-samps_file="/autofs/bioinformatics-ward/tiledb_test/500samp_names.txt"
+db_path="/autofs/bioinformatics-ward/Norgrains_tiledb_parentdir/Norgrains_GBS_longnames_tiledb"
+vcf_file="/autofs/bioinformatics-ward/Norgrains_tiledb_parentdir/100rand_samps_test/100samps_export.bcf"
+samps_file="/autofs/bioinformatics-ward/Norgrains_tiledb_parentdir/100rand_samps.txt"
 bed_file="none"
-chunk_size=100
+chunk_size=200
 
 
 #### Executable #######################
@@ -68,7 +68,7 @@ if [[ $n_samps -lt $chunk_size ]]; then
             --output-dir "$ssvcf_tmp"
     fi
     for f in "$ssvcf_tmp"/*.bcf; do bcftools index -c "$f"; done
-    bcftools merge --no-version "$ssvcf_tmp"/*.bcf -i DP:avg,DP4:avg -Ou |
+    bcftools merge --no-version "$ssvcf_tmp"/*.bcf -Ou |
         bcftools view - -m 2 -O "$out_fmt" -o "$vcf_file"
     
 ## It's more involved if we request more samples than the number of files
@@ -98,13 +98,13 @@ else
                 --output-dir "$ssvcf_tmp"
         fi
         for f in "$ssvcf_tmp"/*.bcf; do bcftools index -c "$f"; done
-        bcftools merge --no-version "$ssvcf_tmp"/*.bcf -i DP:avg,DP4:avg -Ob -o "${cvcf_tmp}/${i}.bcf"
+        bcftools merge --no-version "$ssvcf_tmp"/*.bcf -Ob -o "${cvcf_tmp}/${i}.bcf"
         rm "$ssvcf_tmp"/*
     done
 
     ## Perform final, secondary merge
     for f in "$cvcf_tmp"/*.bcf; do bcftools index -c "$f"; done
-    bcftools merge --no-version "$cvcf_tmp"/*.bcf -i DP:avg,DP4:avg -Ou |
+    bcftools merge --no-version "$cvcf_tmp"/*.bcf -i -Ou |
         bcftools view - -m 2 -O "$out_fmt" -o "$vcf_file"
 fi
 
