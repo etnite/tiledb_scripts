@@ -49,7 +49,7 @@ options(stringsAsFactors = FALSE)
 
 #### User-Defined Constants ####
 
-vcf_file <- "/home/gbg_lab_admin/Array_60TB/Wheat_GBS/Northern_nurseries_Apr2022/filt_P+NUWWSN_25miss_05maf_10het_5dp/all_regions.vcf.gz"
+vcf_file <- "/home/gbg_lab_admin/Array_60TB/Wheat_GBS/Northern_nurseries_Apr2022/filt_P+NUWWSN_25miss_05maf_10het_5dp/all_regions_samp_filt.vcf.gz"
 
 ## Distance threshold to classify outliers (0 to 1; closer to 0 = more stringent)
 dist_thresh <- 0.1
@@ -116,7 +116,7 @@ for (i in dups) {
 
 ## Rbind list, merge with genotypes DF and write out
 out_df <- do.call("rbind", out_list)
-write.csv(geno_df, out_csv, row.names = FALSE)
+write.csv(out_df, out_csv, row.names = FALSE)
 
 ## Optionally write out IBS matrix
 if (!is.null(out_mat)) {
