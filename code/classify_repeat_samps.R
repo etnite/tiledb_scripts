@@ -49,7 +49,7 @@ options(stringsAsFactors = FALSE)
 
 #### User-Defined Constants ####
 
-vcf_file <- "/Users/ward.1660/Downloads/ERSGGL_transfer/all_regions.vcf.gz"
+vcf_file <- "/home/gbg_lab_admin/Array_60TB/Wheat_GBS/Northern_nurseries_Apr2022/filt_P+NUWWSN_25miss_05maf_10het_5dp/all_regions.vcf.gz"
 
 ## Distance threshold to classify outliers (0 to 1; closer to 0 = more stringent)
 dist_thresh <- 0.1
@@ -59,7 +59,11 @@ dist_thresh <- 0.1
 nthreads <- 2
 
 ## Path to write output .csv file
-out_csv <- "/Users/ward.1660/Downloads/ERSGGL_transfer/test_repeats_classify"
+out_csv <- "/home/gbg_lab_admin/Array_60TB/Wheat_GBS/Northern_nurseries_Apr2022/filt_P+NUWWSN_25miss_05maf_10het_5dp/repeats_classification.csv"
+
+## Path to output optional IBS matrix .csv file
+## Set to NULL to disable
+out_mat <- "/home/gbg_lab_admin/Array_60TB/Wheat_GBS/Northern_nurseries_Apr2022/filt_P+NUWWSN_25miss_05maf_10het_5dp/repeats_IBS_matrix.csv"
 
 
 #### Executable ####
@@ -113,5 +117,10 @@ for (i in dups) {
 ## Rbind list, merge with genotypes DF and write out
 out_df <- do.call("rbind", out_list)
 write.csv(geno_df, out_csv, row.names = FALSE)
+
+## Optionally write out IBS matrix
+if (!is.null(out_mat)) {
+  write.csv(dist_mat, file = out_mat)
+}
 
 snpgdsClose(genofile)
