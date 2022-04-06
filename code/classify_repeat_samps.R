@@ -49,17 +49,17 @@ options(stringsAsFactors = FALSE)
 
 #### User-Defined Constants ####
 
-vcf_file <- "/home/gbg_lab_admin/Array_60TB/Wheat_GBS/NIFA_North_FHB/IL_repeats_test/filt_VCF/IL_repeats_test_filt.vcf.gz"
+vcf_file <- "/Users/ward.1660/Downloads/ERSGGL_transfer/all_regions.vcf.gz"
 
 ## Distance threshold to classify outliers (0 to 1; closer to 0 = more stringent)
 dist_thresh <- 0.1
 
 ## Number of threads for calculating IBS matrix
 ## Generally the IBS calculation is quite fast, so may only need 1
-nthreads <- 6
+nthreads <- 2
 
 ## Path to write output .csv file
-out_csv <- "/home/gbg_lab_admin/Array_60TB/Wheat_GBS/NIFA_North_FHB/IL_repeats_test/IL_repeats_classification.csv"
+out_csv <- "/Users/ward.1660/Downloads/ERSGGL_transfer/test_repeats_classify"
 
 
 #### Executable ####
@@ -79,11 +79,10 @@ hclust <- snpgdsHCluster(ibs, need.mat = TRUE, hang = 0.01)
 dist_mat <- hclust$dist
 
 ## Make dataframe of repeated genotypes
-geno_df <- data.frame("combo" = colnames(dist_mat),
-                      "FullSampleName" = str_split_fixed(colnames(dist_mat), "_", 2)[, 1],
-                      "library_prep_id" = str_split_fixed(colnames(dist_mat), "_", 2)[, 2])
-dups <- unique(geno_df$FullSampleName[duplicated(geno_df$FullSampleName)])
-geno_df <- geno_df[geno_df$FullSampleName %in% dups, ]
+geno_df <- data.frame("full_name" = colnames(dist_mat),
+                      "genotype" = sub("^.*:", "", colnames(dist_mat)))
+dups <- unique(geno_df$genotype[duplicated(geno_df$genotype)])
+geno_df <- geno_df[geno_df$genotype %in% dups, ]
 
 ## Initialize outliers list
 out_list <- vector("list", length = length(dups))
@@ -93,7 +92,7 @@ names(out_list) <- dups
 for (i in dups) {
   
   ## Subset distance matrix
-  gen_sel <- geno_df$combo[geno_df$FullSampleName == i]
+  gen_sel <- geno_df$full_name[geno_df$genotype == i]
   sub_dist <- dist_mat[gen_sel, gen_sel]
   
   ## Find outliers
@@ -102,10 +101,10 @@ for (i in dups) {
   ## If all but one reps are classified as outliers, then there is a lack of
   ## consensus. Otherwise identify outliers (if any)
   if (sum(outlie) == length(outlie) - 1) {
-    out_list[[i]] <- data.frame("combo" = names(outlie),
+    out_list[[i]] <- data.frame("full_name" = names(outlie),
                                 "classification" = "no_consens")
   } else {
-    out_list[[i]] <- data.frame("combo" = names(outlie),
+    out_list[[i]] <- data.frame("full_name" = names(outlie),
                                 "classification" = "retain")
     out_list[[i]]$classification[outlie] <- "outlier"
   }
@@ -113,8 +112,6 @@ for (i in dups) {
 
 ## Rbind list, merge with genotypes DF and write out
 out_df <- do.call("rbind", out_list)
-geno_df <- merge(geno_df, out_df, by = "combo")
-geno_df$combo <- NULL
 write.csv(geno_df, out_csv, row.names = FALSE)
 
 snpgdsClose(genofile)
