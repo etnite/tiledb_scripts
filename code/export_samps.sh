@@ -23,10 +23,10 @@
 #### User-Defined Constants ###########
 
 db_path="/autofs/bioinformatics-ward/Norgrains_tiledb_parentdir/Norgrains_GBS_longnames_tiledb"
-vcf_file="/autofs/bioinformatics-ward/Norgrains_tiledb_parentdir/100rand_samps_test/100samps_export.bcf"
-samps_file="/autofs/bioinformatics-ward/Norgrains_tiledb_parentdir/100rand_samps.txt"
+vcf_file="/autofs/bioinformatics-ward/VCF_generation/OSU_samps_for_Nelly_Apr2022/OSU_samples_for_Nelly_April2022_raw.bcf"
+samps_file="/autofs/bioinformatics-ward/VCF_generation/OSU_samps_for_Nelly_Apr2022/OSU_for_Nelly_samps.txt"
 bed_file="none"
-chunk_size=200
+chunk_size=500
 
 
 #### Executable #######################
@@ -107,7 +107,7 @@ else
 
     ## Perform final, secondary merge
     for f in "$cvcf_tmp"/*.bcf; do bcftools index -c "$f"; done
-    bcftools merge --no-version "$cvcf_tmp"/*.bcf -i -Ou |
+    bcftools merge --no-version "$cvcf_tmp"/*.bcf -Ou |
         bcftools view - -m 2 -O "$out_fmt" -o "$vcf_file"
 fi
 

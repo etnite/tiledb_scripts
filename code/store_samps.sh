@@ -27,7 +27,7 @@
 
 #### User-Defined Constants ###########
 
-vcf_file="/autofs/bioinformatics-ward/2022_Norgrains_VCFs/except_KY/filt_80miss_3maf_10het_5dp/all_regions_samp_filt.bcf"
+vcf_file="/autofs/bioinformatics-ward/norgrains_tiledb02_prep/NORGRAINS_2021+2022/filt_no_norgrains_80miss_3maf_10het/all_regions_samp_filt.bcf"
 db_path="/autofs/bioinformatics-ward/Norgrains_tiledb_parentdir/Norgrains_GBS_longnames_tiledb"
 ref_file="/autofs/bioinformatics-ward/Ensembl_v41_IWGSC_CSv1_refseq/Triticum_aestivum.IWGSC.dna.toplevel.fa"
 samps_file="none"

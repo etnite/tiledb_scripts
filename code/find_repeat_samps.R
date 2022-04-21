@@ -33,8 +33,7 @@ library(tools)
 
 ## Read in command-line argument (path to input file)
 args <- commandArgs(trailingOnly = TRUE)
-#samps_file <- args[1]
-samps_file <- "/Users/ward.1660/Downloads/OSU_FAES_transfer/norgrains_samp_names_04012022.txt"
+samps_file <- args[1]
 
 ## Construct output name
 out_path <- file_path_sans_ext(samps_file)
