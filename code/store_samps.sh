@@ -27,15 +27,22 @@
 
 #### User-Defined Constants ###########
 
-vcf_file="/autofs/bioinformatics-ward/norgrains_tiledb02_prep/NORGRAINS_2021+2022/filt_no_norgrains_80miss_3maf_10het/all_regions_samp_filt.bcf"
-db_path="/autofs/bioinformatics-ward/Norgrains_tiledb_parentdir/Norgrains_GBS_longnames_tiledb"
-ref_file="/autofs/bioinformatics-ward/Ensembl_v41_IWGSC_CSv1_refseq/Triticum_aestivum.IWGSC.dna.toplevel.fa"
+vcf_file="/autofs/bioinformatics-ward/Norgrains_reform_tiledb_parentdir/liftover_samples_newnames.bcf"
+db_path="/autofs/bioinformatics-ward/Norgrains_reform_tiledb_parentdir/Norgrains_GBS_longnames_tiledb"
+ref_file="/autofs/bioinformatics-ward/ref_genomes/CSv1_ref_shortnames/CSv1_ref_shortnames.fa"
 samps_file="none"
 bed_file="none"
 chunk_size=500
 
 
 #### Executable #######################
+
+## Check to see if user-specified database exists
+if tiledbvcf stat --uri "$db_path" | grep -q "Cannot open TileDB-VCF dataset"; then
+    echo "ERROR: user-specified TileDB-VCF database does not exist"
+    echo "Run tiledbvcf create --uri <db_path> to create a database"
+    exit 1
+fi
 
 ## Create a temp. directory in the DB's parent directory
 db_dir=$(dirname "$db_path")
