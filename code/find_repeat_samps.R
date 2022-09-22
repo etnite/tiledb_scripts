@@ -6,11 +6,11 @@
 ## 
 ## The current convention for naming samples in the database is:
 ##
-##   <library_prep_num>:<project>:<state>:<year>:<genotype>
+##   <library_prep_num>.<project>.<state>.<year>.<genotype>
 ##
 ## For instance:
 ##
-##   157048:NORGRAINS:IL:21:IL20-1234
+##   157048.NORGRAINS.IL.21.IL20-1234
 ##
 ## for a particular Illinois line tested as part of the 2021 Norgrains project.
 ## The library prep number is a serial number assigned by the ERSGGL to all DNA
@@ -40,10 +40,10 @@ out_path <- file_path_sans_ext(samps_file)
 out_path <- paste0(out_path, "_repeats_only.txt")
 
 ## Isolate repeated samples from input
-samps <- read.table(samps_file, header = FALSE, sep = ":")
+samps <- read.table(samps_file, header = FALSE, sep = ".")
 samps <- samps[order(samps$V1), ]
 dups <- unique(samps$V5[duplicated(samps$V5)])
 samps <- samps[samps$V5 %in% dups, ]
 
 ## Write out subset
-write.table(samps, file = out_path, sep = ":", quote = FALSE, col.names = FALSE, row.names = FALSE)
+write.table(samps, file = out_path, sep = ".", quote = FALSE, col.names = FALSE, row.names = FALSE)
