@@ -3,11 +3,11 @@
 ## In the current NorGrains workflow, genotyped samples are given names using the
 ## following convention:
 ##
-##    <library_prep_num>:<project>:<state>:<year>:<genotype>
+##    <library_prep_num>.<project>.<state>.<year>.<genotype>
 ##
 ## For instance:
 ##
-##   157048:NORGRAINS:IL:21:IL20-1234
+##   157048.NORGRAINS.IL.21.IL20-1234
 ##
 ## Therefore genotypes may be repeated within a VCF file if, for instance, they
 ## were sampled in multiple years. This may or may not be desirable depending on
@@ -98,7 +98,7 @@ if (is.null(repeats_file)) {
 psc <- read.table(file.path(out_dir, "PSC.txt"), sep = "\t", header = TRUE, 
                   comment.char = "")
 psc <- psc[order(psc$X.14.nMissing), ]
-psc$geno <- sub("^.*:", "", psc$X.3.sample)
+psc$geno <- sub("^.*\\.", "", psc$X.3.sample)
 psc <- psc[!duplicated(psc$geno), ]
 psc <- psc[order(psc$X.3.sample), ]
 write(psc$X.3.sample, file = file.path(out_dir, "samps_subset.txt"), sep = "\n")
