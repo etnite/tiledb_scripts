@@ -17,11 +17,11 @@
 ##
 ## The script assumes that sample names in the input VCF are are formatted:
 ##
-##   <library_prep_num>:<project>:<state>:<year>:<genotype>
+##   <library_prep_num>.<project>.<state>.<year>.<genotype>
 ##
 ## For instance:
 ##
-##   157048:NORGRAINS:IL:21:IL20-1234
+##   157048.NORGRAINS.IL.21.IL20-1234
 ##
 ## for a particular Illinois line tested as part of the 2021 Norgrains project.
 ## The library prep number is a serial number assigned by the ERSGGL to all DNA
@@ -49,7 +49,7 @@ options(stringsAsFactors = FALSE)
 
 #### User-Defined Constants ####
 
-vcf_file <- "/autofs/bioinformatics-ward/Norgrains_tiledb_parentdir/repeats_analysis_2022-04-15/filt_50miss_10het_5maf/all_regions_except_4D_imp.vcf.gz"
+vcf_file <- "/autofs/bioinformatics-ward/VCF_generation/Cornell_samples_Sep2022/filt_20miss_5maf_10het/all_regions.vcf.gz"
 
 ## Distance threshold to classify outliers (0 to 1; closer to 0 = more stringent)
 dist_thresh <- 0.1
@@ -59,14 +59,22 @@ dist_thresh <- 0.1
 nthreads <- 2
 
 ## Path to write output .csv file
-out_csv <- "/autofs/bioinformatics-ward/Norgrains_tiledb_parentdir/repeats_analysis_2022-04-15/filt_50miss_10het_5maf/repeats_classification.csv"
+out_csv <- "/autofs/bioinformatics-ward/VCF_generation/Cornell_samples_Sep2022/filt_20miss_5maf_10het/repeats_classification.csv"
 
 ## Path to output optional IBS matrix .csv file
 ## Set to NULL to disable
-out_mat <- NULL
+## Set out_mat_set to either "full" for all samples or "dups" for only duplicated samples
+out_mat <- "/autofs/bioinformatics-ward/VCF_generation/Cornell_samples_Sep2022/filt_20miss_5maf_10het/IBS_mat.csv"
+out_mat_set <- "dups"
 
 
 #### Executable ####
+
+if (!is.null(out_mat)) {
+  if (!out_mat_set %in% c("full", "dups")) {
+    stop("Please set out_mat_set to either 'full' or 'dups'")
+  }
+}
 
 out_dir <- dirname(out_csv)
 dir.create(out_dir, recursive = TRUE)
@@ -84,7 +92,7 @@ dist_mat <- hclust$dist
 
 ## Make dataframe of repeated genotypes
 geno_df <- data.frame("full_name" = colnames(dist_mat),
-                      "genotype" = sub("^.*:", "", colnames(dist_mat)))
+                      "genotype" = sub("^.*\\.", "", colnames(dist_mat)))
 dups <- unique(geno_df$genotype[duplicated(geno_df$genotype)])
 geno_df <- geno_df[geno_df$genotype %in% dups, ]
 
@@ -120,7 +128,13 @@ write.csv(out_df, out_csv, row.names = FALSE, quote = FALSE)
 
 ## Optionally write out IBS matrix
 if (!is.null(out_mat)) {
-  write.csv(dist_mat, file = out_mat)
+  if (out_mat_set == "full") {
+    write.csv(dist_mat, file = out_mat)
+  } else {
+    geno_df <- geno_df[order(geno_df$genotype), ]
+    dups_set <- geno_df$full_name[geno_df$genotype %in% dups]
+    write.csv(dist_mat[dups_set, dups_set], file = out_mat)
+  }
 }
 
 snpgdsClose(genofile)
