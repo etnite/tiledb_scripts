@@ -120,3 +120,74 @@ missingness, SNPwise het. call proportion, MAF, and sample-wise het. call
 proportion prior to importing, just to get rid of SNPs and samples that won't likely
 be very useful. Likewise, the multi-sample VCF/BCF
 generated from exported samples can be filtered however the user wants. 
+
+## Dealing with Repeated Samples
+
+One thing we need to consider when using this type of database is how to deal with
+samples that have been genotyped multiple times. Currently, we store samples in the form:
+
+```
+<library_prep_num>.<project>.<state>.<year>.<genotype>
+```
+
+So we could have the same genotype appear multiple times, if it was genotyped in different projects, years, etc.
+For instance:
+
+```
+241587.NIFA_proj.IL.20.IL00-8530
+255817.NUWWSN.IL.22.IL00-8530
+```
+
+Once these two repeated samples of the same genotype are in the database, they cannot be merged - merging typically
+happens during the calling process (if we so choose). Therefore, the question arises, which sample should we use?
+This repository has a few scripts to deal with this situation:
+
+### Find repeated samples
+
+The script `code/find_repeat_samps.R` is a simple script to find which genotypes present in a TileDB instance are
+repeated. We first generate a list of everything present in the database:
+
+```
+tiledbvcf list --uri /path/to/db > sample_list.txt
+```
+
+Then we just supply this list as a positional argument to find_repeat_samps.R:
+
+```
+Rscript find_repeat_samps.R sample_list.txt
+```
+
+This outputs a text file in the same location, in this case labeled `sample_list_repeats_only.txt`
+
+### Classify repeated samples
+
+Say we have a particular genotype that has been genotyped 8 times in our database. Since we can't merge these together,
+we need to find a good sample that represents this group. However, how do we know which of these 8 repeats are legit?
+There are a few things we need to careful of:
+
+1. Cases where one or more repeats are outliers and are not as closely related to the others as we assume
+2. Cases where none of the repeats are very... repeatable (i.e. none of them appear very similar and there is essentially no consensus)
+
+The script `code/classify_repeat_samps.R` can be used for this purpose. It takes a VCF file as input, and 
+calculates an identity-by-state (IBS) matrix for all samples. IBS is essentially a simply matching coefficient
+that measures how often alleles differ between two samples. A value of 0 would indicate perfect concurrence
+between two samples, while 1 would indicate two samples which share no alleles.
+
+Based on the sample naming scheme above, the script finds repeated genotypes and then classifies them into three
+categories in an output .csv file:
+
+1. retain
+2. outlier
+3. no_consens
+
+The threshold for determining whether or not samples are "similar" or not is a value between 0 and 1, with values closer to
+0 being more stringent (I often use 0.1). The input VCF should not have a high level of missing data, as this may
+lead to inflated IBS coefficients.
+
+The .csv file produced by `classify_repeat_samps.R` can then be used to remove bad replicates from the VCF file.
+
+### Remove repeats from a VCF
+
+Assuming we have already removed all "bad" repeated samples from a VCF file, we can select one representative sample
+for each remaining group of repeats. The script `code/remove_repeats_from_vcf.R` can be used to perform this task.
+For each set of repeated samples, it will retain the sample with the lowest amount of missing data.
